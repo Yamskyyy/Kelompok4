@@ -30,21 +30,66 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    token_receive = request.cookies.get("mytoken")
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=["HS256"])
-        user_info = db.users.find_one({"username": payload["id"]})
-        return render_template("index.html", user_info=user_info)
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for("login", msg="Your token has expired"))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for("login", msg="There was problem logging you in"))
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(
+                token_receive,
+                SECRET_KEY,
+                algorithms=['HS256']
+            )
+            user_info = db.normal_users.find_one({'username':payload.get('id')})
+            user_info2 = db.expert_users.find_one({'username':payload.get('id')})
+            
+            if user_info:
+                return render_template('normal.html',user_info=user_info)
+            elif user_info2:
+                return render_template('expert.html',user_info=user_info2)
+            else:
+                return render_template('login.html')
+            
+        except jwt.ExpiredSignatureError:
+            msg='Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg='There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
 
 
 @app.route("/login")
 def login():
+    token_receive = request.cookies.get(TOKEN_KEY)
     msg = request.args.get("msg")
-    return render_template("login.html", msg=msg)
+    if msg:
+        return render_template('login.html',msg=msg)
+    else:
+        if token_receive:
+            try:
+                payload = jwt.decode(
+                    token_receive,
+                    SECRET_KEY,
+                    algorithms=['HS256']
+                )
+                user_info = db.normal_users.find_one({'username':payload.get('id')})
+                user_info2 = db.expert_users.find_one({'username':payload.get('id')})
+                
+                if user_info:
+                    return render_template('normal.html',user_info=user_info)
+                elif user_info2:
+                    return render_template('expert.html',user_info=user_info)
+                else:
+                    return render_template('login.html')
+                    
+            except jwt.ExpiredSignatureError:
+                msg='Your token has expired'
+                return redirect(url_for('login', msg=msg))
+            except jwt.exceptions.DecodeError:
+                msg='There was a problem logging you in'
+                return redirect(url_for('login', msg=msg))
+        else:
+            return render_template('login.html',msg=msg)
 
 
 @app.route("/user/<username>")
@@ -71,7 +116,13 @@ def sign_in():
     password_receive = request.form["password_give"]
     pw_hash = hashlib.sha256(password_receive.encode("utf-8")).hexdigest()
     print(username_receive, pw_hash)
-    result = db.users.find_one(
+    result = db.normal_users.find_one(
+        {
+            "username": username_receive,
+            "password": pw_hash,
+        }
+    )
+    result2 = db.expert_users.find_one(
         {
             "username": username_receive,
             "password": pw_hash,
@@ -91,8 +142,20 @@ def sign_in():
                 "token": token,
             }
         )
-    # Let's also handle the case where the id and
-    # password combination cannot be found
+    elif result2:
+        payload = {
+            "id": username_receive,
+            # the token will be valid for 24 hours
+            "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+        return jsonify(
+            {
+                "result": "success",
+                "token": token,
+            }
+        )
     else:
         return jsonify(
             {
@@ -106,25 +169,38 @@ def sign_in():
 def sign_up():
     username_receive = request.form["username_give"]
     password_receive = request.form["password_give"]
+    role_receive = request.form["role_give"]
     password_hash = hashlib.sha256(password_receive.encode("utf-8")).hexdigest()
-    doc = {
-        "username": username_receive,  # id
-        "password": password_hash,  # password
-        "profile_name": username_receive,  # user's name is set to their id by default
-        "profile_pic": "",  # profile image file name
-        "profile_pic_real": "profile_pics/profile_placeholder.png",  # a default profile image
-        "profile_info": "",  # a profile description
-    }
-    db.users.insert_one(doc)
-    return jsonify({"result": "success"})
+    if(role_receive == 'expert'):
+        doc = {
+            "username": username_receive,                               
+            "password": password_hash,                                  
+            "profile_name": username_receive,
+            "role":role_receive,                                            
+            }
+        db.expert_users.insert_one(doc)
+        return jsonify({'result': 'success'})
+    elif(role_receive == 'normal'):
+        doc = {
+            "username": username_receive,                               
+            "password": password_hash,
+            "profile_name" : username_receive,     
+            "role":role_receive,                                                                        
+            }
+        db.normal_users.insert_one(doc)
+        return jsonify({'result': 'success'})
+    else:
+        return jsonify({'result': 'failed'})
 
 
 @app.route("/sign_up/check_dup", methods=["POST"])
 def check_dup():
     # ID we should check whether or not the id is already taken
     username_receive = request.form["username_give"]
-    exists = bool(db.users.find_one({"username": username_receive}))
-    return jsonify({"result": "success", "exists": exists})
+    exists = bool(db.normal_users.find_one({'username':username_receive}))
+    exists2 = bool(db.expert_users.find_one({'username':username_receive}))
+    return jsonify({"result": "success", "exists": exists+exists2})
+
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)   
