@@ -42,9 +42,9 @@ def home():
             user_info2 = db.expert_users.find_one({'username':payload.get('id')})
             
             if user_info:
-                return render_template('normal.html',user_info=user_info)
+                return render_template('home.html',user_info=user_info)
             elif user_info2:
-                return render_template('expert.html',user_info=user_info2)
+                return render_template('home2.html',user_info2=user_info2)
             else:
                 return render_template('login.html')
             
@@ -76,9 +76,9 @@ def login():
                 user_info2 = db.expert_users.find_one({'username':payload.get('id')})
                 
                 if user_info:
-                    return render_template('normal.html',user_info=user_info)
+                    return render_template('about.html',user_info=user_info)
                 elif user_info2:
-                    return render_template('expert.html',user_info=user_info)
+                    return render_template('contact.html',user_info2=user_info2)
                 else:
                     return render_template('login.html')
                     
