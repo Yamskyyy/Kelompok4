@@ -42,15 +42,15 @@ def home():
             user_info2 = db.expert_users.find_one({'username': payload.get('id')})
 
             if user_info:
-<<<<<<< HEAD
+
                 return render_template('home.html',user_info=user_info)
             elif user_info2:
                 return render_template('home2.html',user_info2=user_info2)
-=======
+
                 return render_template('home.html', user_info=user_info)  # Mengarahkan ke home.html sebagai dashboard
             elif user_info2:
                 return render_template('expert.html', user_info=user_info2)
->>>>>>> ca988e0f339f11e7fac42d760b6422b6607fe8fb
+
             else:
                 return render_template('login.html')
 
