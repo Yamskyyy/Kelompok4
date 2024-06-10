@@ -38,25 +38,30 @@ def home():
                 SECRET_KEY,
                 algorithms=['HS256']
             )
-            user_info = db.normal_users.find_one({'username':payload.get('id')})
-            user_info2 = db.expert_users.find_one({'username':payload.get('id')})
-            
+            user_info = db.normal_users.find_one({'username': payload.get('id')})
+            user_info2 = db.expert_users.find_one({'username': payload.get('id')})
+
             if user_info:
+<<<<<<< HEAD
                 return render_template('home.html',user_info=user_info)
             elif user_info2:
                 return render_template('home2.html',user_info2=user_info2)
+=======
+                return render_template('home.html', user_info=user_info)  # Mengarahkan ke home.html sebagai dashboard
+            elif user_info2:
+                return render_template('expert.html', user_info=user_info2)
+>>>>>>> ca988e0f339f11e7fac42d760b6422b6607fe8fb
             else:
                 return render_template('login.html')
-            
+
         except jwt.ExpiredSignatureError:
-            msg='Your token has expired'
+            msg = 'Your token has expired'
             return redirect(url_for('login', msg=msg))
         except jwt.exceptions.DecodeError:
-            msg='There was a problem logging you in'
+            msg = 'There was a problem logging you in'
             return redirect(url_for('login', msg=msg))
     else:
         return render_template('login.html')
-
 
 @app.route("/login")
 def login():
