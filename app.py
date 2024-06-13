@@ -206,6 +206,41 @@ def check_dup():
     exists2 = bool(db.expert_users.find_one({'username':username_receive}))
     return jsonify({"result": "success", "exists": exists+exists2})
 
+@app.route("/act", methods=["POST"])
+def act_post():
+    act_receive = request.form['act_give']
+
+    count = db.act.count_documents({})
+    num = count + 1
+
+    doc = {
+        'num': num,
+        'act': act_receive,
+        'done': 0,
+    }
+    db.act.insert_one(doc)
+    return jsonify({'msg': 'Kegiatan Berhasil Ditambah!'})
+
+@app.route("/act/done", methods=["POST"])
+def act_done():
+    num_receive = request.form['num_give']
+    db.act.update_one(
+        {'num': int(num_receive)},
+        {'$set': {'done': 1}}
+    )
+    return jsonify({'msg': 'Update Kegiatan Selesai!'})
+
+@app.route("/delete", methods=["POST"])
+def act_bucket():
+    num_receive = request.form['num_give']
+    db.act.delete_one({'num': int(num_receive)})
+    return jsonify({'msg': 'delete success!'})
+
+@app.route("/act", methods=["GET"])
+def act_get():
+    act_list = list(db.act.find({}, {'_id': False}))
+    return jsonify({'acts': act_list})
+
 @app.route ('/about')
 def about():
     return render_template('about.html')
