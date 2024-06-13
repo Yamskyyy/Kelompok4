@@ -144,7 +144,7 @@ input::-webkit-calender-picker-indicator {
     margin-bottom: 20px;
 }
 
-
+/* Kegiatan Hari Ini */
 .mybox {
     width: 100%;
     max-width: 700px;
@@ -160,6 +160,17 @@ input::-webkit-calender-picker-indicator {
 }
 
 .myact>input {
+    width: 70%;
+}
+
+.myact_week {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.myact_week>input {
     width: 70%;
 }
 

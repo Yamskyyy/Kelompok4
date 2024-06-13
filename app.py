@@ -206,6 +206,7 @@ def check_dup():
     exists2 = bool(db.expert_users.find_one({'username':username_receive}))
     return jsonify({"result": "success", "exists": exists+exists2})
 
+# ACT
 @app.route("/act", methods=["POST"])
 def act_post():
     act_receive = request.form['act_give']
@@ -240,6 +241,42 @@ def act_bucket():
 def act_get():
     act_list = list(db.act.find({}, {'_id': False}))
     return jsonify({'acts': act_list})
+
+# ACT_WEEK
+@app.route("/act_week", methods=["POST"])
+def act_week_post():
+    act_week_receive = request.form['act_week_give']
+
+    count = db.act_week.count_documents({})
+    num = count + 1
+
+    doc = {
+        'num': num,
+        'act_week': act_week_receive,
+        'done': 0,
+    }
+    db.act_week.insert_one(doc)
+    return jsonify({'msg': 'Rencana Minggu Ini Berhasil Ditambah!'})
+
+@app.route("/act_week/done", methods=["POST"])
+def act_week_done():
+    num_receive = request.form['num_give']
+    db.act_week.update_one(
+        {'num': int(num_receive)},
+        {'$set': {'done': 1}}
+    )
+    return jsonify({'msg': 'Update Rencana Selesai!'})
+
+@app.route("/delete_week", methods=["POST"])
+def act_week_bucket():
+    num_receive = request.form['num_give']
+    db.act_week.delete_one({'num': int(num_receive)})
+    return jsonify({'msg': 'delete success!'})
+
+@app.route("/act_week", methods=["GET"])
+def act_week_get():
+    act_week_list = list(db.act_week.find({}, {'_id': False}))
+    return jsonify({'acts_week': act_week_list})
 
 @app.route ('/about')
 def about():
