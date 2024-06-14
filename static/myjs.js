@@ -145,7 +145,79 @@ function delete_act_week(num) {
         data: { num_give: num },
         success: function (response) {
             alert(response["msg"]);
-            show_act();
+            show_act_week();
+        }
+    });
+}
+
+// Note
+$(document).ready(function () {
+    show_note();
+});
+function show_note() {
+    $('#note-list').empty();
+    $.ajax({
+        type: "GET",
+        url: "/note",
+        data: {},
+        success: function (response) {
+            let rows = response['notes']
+            for (let i = 0; i < rows.length; i++) {
+                let note = rows[i]['note'];
+                let num = rows[i]['num'];
+                let done = rows[i]['done'];
+
+                let temp_html = '';
+                if (done === 0) {
+                    temp_html = `
+                    <li>
+                        <h2>${note}</h2>
+                        <button onclick="done_note(${num})" type="button" class="btn btn-primary">Selesai</button>
+                        <button onclick="delete_note(${num})" type="button" class="btn btn-danger btn-delete" style="margin-left: 10px;">Delete</button>
+                    </li>
+                    `;
+                } else {
+                    temp_html = `
+                    <li>
+                        <h2 class="done">✅ ${note}</h2>
+                        <button onclick="delete_note(${num})" type="button" class="btn btn-danger btn-delete" style="margin-left: 10px;">Delete</button>
+                    </li>
+                    `;
+                } $('#note-list').append(temp_html);
+            }
+        }
+    });
+}
+function save_note() {
+    let note = $('#note').val();
+    $.ajax({
+        type: "POST",
+        url: "/note",
+        data: { note_give: note },
+        success: function (response) {
+            alert(response["msg"]);
+            window.location.reload();
+        }
+    });
+}
+function done_note(num) {
+    $.ajax({
+        type: "POST",
+        url: "/note/done",
+        data: { num_give: num },
+        success: function () {
+            window.location.reload();
+        }
+    });
+}
+function delete_note(num) {
+    $.ajax({
+        type: "POST",
+        url: "/delete_note",
+        data: { num_give: num },
+        success: function (response) {
+            alert(response["msg"]);
+            show_note();
         }
     });
 }

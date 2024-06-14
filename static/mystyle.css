@@ -1,5 +1,9 @@
 * {
-    font-family: "Poetsen One", sans-serif;
+    font-family: "GFS Didot", serif;
+}
+
+h1 {
+    font-weight: 600;
 }
 
 body {
@@ -144,7 +148,7 @@ input::-webkit-calender-picker-indicator {
     margin-bottom: 20px;
 }
 
-/* Kegiatan Hari Ini */
+/* Kegiatan Hari Ini, Minggu ini, */
 .mybox {
     width: 100%;
     max-width: 700px;
@@ -174,12 +178,22 @@ input::-webkit-calender-picker-indicator {
     width: 70%;
 }
 
+.mynote {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mynote>input {
+    width: 70%;
+}
+
 .mybox>li {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-
     margin-bottom: 10px;
     min-height: 48px;
 }
