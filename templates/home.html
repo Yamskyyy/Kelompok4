@@ -22,10 +22,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/simple-jscalendar@1.4.5/source/jsCalendar.min.css"
         integrity="sha384-CTBW6RKuDwU/TWFl2qLavDqLuZtBzcGxBXY8WvQ0lShXglO/DsUvGkXza+6QTxs0" crossorigin="anonymous" />
-
+    <script>
+        $(document).ready(function () {
+            get_posts("{{user_info.username}}");
+        });
+    </script>
     <style>
         .bg-purple {
             background-color: var(--bs-purple) !important;
+        }
+        .d-none {
+            cursor: pointer;
         }
     </style>
 </head>
@@ -83,43 +90,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
-                                <i class="bi bi-bookmark-fill"></i>
-                                <span class="d-none d-md-inline">
-                                    Saved
-                                </span>
-                            </a>
-                        </li>
-                        <li class="nav-item mt-4">
-                            <a href="#" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
-                                <i class="bi bi-person-fill"></i>
-                                <span class="d-none d-md-inline">
-                                    My Profile
-                                </span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
-                                <i class="bi bi-gear-fill"></i>
-                                <span class="d-none d-md-inline">
-                                    Settings
-                                </span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a onclick="sign_out()"
                                 class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-door-open-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Sign Out
-                                </span>
-                            </a>
-                        </li>
-                        <li class="nav-item mt-4">
-                            <a href="#" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
-                                <i class="bi bi-question-circle-fill"></i>
-                                <span class="d-none d-md-inline">
-                                    Help
                                 </span>
                             </a>
                         </li>
@@ -134,8 +109,8 @@
             <div class="py-4 px-3 px-md-5 shadow-sm bg-body">
                 <div class="row row-cols-1 row-cols-md-2">
                     <div class="col">
-                        <h1 class="m-0">Dashboard</h1>
-                        <p class="mb-lg-0">Welcome, <span>{{ user_info2.username }}</span></p>
+                        <h1 class="m-0">Dashboard <span>{{ user_info.username }}</h1>
+                        <p class="mb-lg-0">Welcome </span></p>
                     </div>
                     <div class="col">
                         <form class="d-flex align-items-center h-100" role="search">
@@ -186,14 +161,15 @@
                     </div>
                     <div class="col">
                         <div class="p-4 rounded shadow-sm bg-warning bg-gradient bg-opacity-75 text-bg-primary h-100">
-                            <h2 class="fs-4">Note</h2>
-                            <p>
-                                Lorem ipsum dolor sit amet consectetur
-                                adipisicing elit. Tenetur quam illo saepe
-                                reprehenderit aliquid id maxime doloremque
-                                sit eius eligendi facere quos ducimus odit,
-                                eum sapiente ipsa nihil atque? Suscipit!
-                            </p>
+                            <h2>Note</h2>
+                            <div class="mybox">
+                                <div class="mynote">
+                                    <input id="note" class="form-control" type="text" placeholder="Masukkan Catatan">
+                                    <button onclick="save_note()" type="button" class="btn btn-primary">Simpan</button>
+                                </div>
+                            </div>
+                            <div class="mybox" id="note-list">
+                            </div>
                         </div>
                     </div>
                 </div>
