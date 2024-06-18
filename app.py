@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, make_response
+from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, make_response, flash
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -9,6 +9,7 @@ import hashlib
 import csv
 import pdfkit
 from io import StringIO, BytesIO
+from functools import wraps
 
 # Load environment variables from a .env file
 dotenv_path = join(dirname(__file__), '.env')
@@ -18,6 +19,7 @@ app = Flask(__name__)
 
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['UPLOAD_FOLDER'] = './static/profile_pics'
+app.secret_key = os.getenv('SECRET_KEY')
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 TOKEN_KEY = os.getenv('TOKEN_KEY')
@@ -27,9 +29,42 @@ client = MongoClient(MONGO_URI)
 db = client.dbPPA
 
 # Set path to the wkhtmltopdf executable
-# config = pdfkit.configuration(wkhtmltopdf='C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe')  # Update this path accordingly
+config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update this path accordingly for your system
+
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token_receive = request.cookies.get(TOKEN_KEY)
+        if token_receive:
+            try:
+                payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+                user_info = db.expert_users.find_one({'username': payload.get('id')})
+                if user_info:
+                    return f(*args, **kwargs)
+            except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+                pass
+        flash("You do not have permission to access this page.", "danger")
+        return redirect(url_for('home'))
+    return decorated_function
+
+def admin_or_user(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token_receive = request.cookies.get(TOKEN_KEY)
+        if token_receive:
+            try:
+                payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+                user_info = db.normal_users.find_one({'username': payload.get('id')}) or db.expert_users.find_one({'username': payload.get('id')})
+                if user_info:
+                    return f(*args, **kwargs)
+            except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+                pass
+        flash("You do not have permission to access this page.", "danger")
+        return redirect(url_for('home'))
+    return decorated_function
 
 @app.route('/financial_report', methods=['GET', 'POST'])
+@admin_only
 def financial_report():
     if request.method == 'POST':
         pemasukan = int(request.form['pemasukan'])
@@ -236,6 +271,7 @@ def contact():
     return render_template('contact.html')
 
 @app.route('/report', methods=['GET', 'POST'])
+@admin_or_user
 def report():
     if request.method == 'POST':
         data_type = request.form['data_type']
@@ -301,6 +337,29 @@ def search():
     categories = ['absensi', 'laporan keuangan', 'progresif anak']
     results = [category for category in categories if query in category]
     return jsonify(results)
+
+@app.route('/report_progresif_anak', methods=['GET', 'POST'])
+@admin_only
+def report_progresif_anak():
+    if request.method == 'POST':
+        name = request.form['name']
+        academic_score = int(request.form['academic_score'])
+        physical_score = int(request.form['physical_score'])
+        attendance_score = int(request.form['attendance_score'])
+        
+        doc = {
+            'name': name,
+            'academic_score': academic_score,
+            'physical_score': physical_score,
+            'attendance_score': attendance_score,
+        }
+        
+        db.progresif_anak.insert_one(doc)
+        
+        return redirect(url_for('report_progresif_anak'))
+    
+    progresif_anak = list(db.progresif_anak.find({}, {'_id': False}))
+    return render_template('report_progresif_anak.html', progresif_anak=progresif_anak)
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)
