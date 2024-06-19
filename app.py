@@ -1,3 +1,4 @@
+from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, make_response, flash
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -5,55 +6,93 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 import jwt
 import hashlib
-from flask import (
-    Flask,
-    render_template,
-    jsonify,
-    request,
-    redirect,
-    url_for,
-)
-from werkzeug.utils import secure_filename
+import csv
+import pdfkit
+from io import StringIO, BytesIO
+from functools import wraps
 
-app=Flask(__name__)
+# Load environment variables from a .env file
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+app = Flask(__name__)
 
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['UPLOAD_FOLDER'] = './static/profile_pics'
+app.secret_key = os.getenv('SECRET_KEY')
 
-SECRET_KEY = 'SPARTA'
-TOKEN_KEY = 'mytoken'
+SECRET_KEY = os.getenv('SECRET_KEY')
+TOKEN_KEY = os.getenv('TOKEN_KEY')
+MONGO_URI = os.getenv('MONGO_URI')
 
-client=MongoClient('mongodb+srv://Aryama:1234@cluster0.9x3eatx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
-db=client.dbPPA
+client = MongoClient(MONGO_URI)
+db = client.dbPPA
 
-app = Flask(__name__)
+# Set path to the wkhtmltopdf executable
+config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update this path accordingly for your system
+
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token_receive = request.cookies.get(TOKEN_KEY)
+        if token_receive:
+            try:
+                payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+                user_info = db.expert_users.find_one({'username': payload.get('id')})
+                if user_info:
+                    return f(*args, **kwargs)
+            except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+                pass
+        flash("You do not have permission to access this page.", "danger")
+        return redirect(url_for('home'))
+    return decorated_function
+
+def admin_or_user(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token_receive = request.cookies.get(TOKEN_KEY)
+        if token_receive:
+            try:
+                payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+                user_info = db.normal_users.find_one({'username': payload.get('id')}) or db.expert_users.find_one({'username': payload.get('id')})
+                if user_info:
+                    return f(*args, **kwargs)
+            except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+                pass
+        flash("You do not have permission to access this page.", "danger")
+        return redirect(url_for('home'))
+    return decorated_function
+
+@app.route('/financial_report', methods=['GET', 'POST'])
+@admin_only
+def financial_report():
+    if request.method == 'POST':
+        pemasukan = int(request.form['pemasukan'])
+        pengeluaran = int(request.form['pengeluaran'])
+        saldo = int(request.form['saldo'])
+    else:
+        # Data default, bisa diganti dengan data dari database jika ada
+        pemasukan = 10431
+        pengeluaran = 7061
+        saldo = 291009
+
+    return render_template('financial_report.html', pemasukan=pemasukan, pengeluaran=pengeluaran, saldo=saldo)
 
 @app.route("/")
 def home():
     token_receive = request.cookies.get(TOKEN_KEY)
     if token_receive:
         try:
-            payload = jwt.decode(
-                token_receive,
-                SECRET_KEY,
-                algorithms=['HS256']
-            )
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
             user_info = db.normal_users.find_one({'username': payload.get('id')})
             user_info2 = db.expert_users.find_one({'username': payload.get('id')})
 
             if user_info:
-
-                return render_template('home.html',user_info=user_info)
+                return render_template('home.html', user_info=user_info)
             elif user_info2:
-                return render_template('home2.html',user_info2=user_info2)
-
-                return render_template('home.html', user_info=user_info)  # Mengarahkan ke home.html sebagai dashboard
-            elif user_info2:
-                return render_template('expert.html', user_info=user_info2)
-
+                return render_template('home2.html', user_info2=user_info2)
             else:
                 return render_template('login.html')
-
         except jwt.ExpiredSignatureError:
             msg = 'Your token has expired'
             return redirect(url_for('login', msg=msg))
@@ -68,44 +107,35 @@ def login():
     token_receive = request.cookies.get(TOKEN_KEY)
     msg = request.args.get("msg")
     if msg:
-        return render_template('login.html',msg=msg)
+        return render_template('login.html', msg=msg)
     else:
         if token_receive:
             try:
-                payload = jwt.decode(
-                    token_receive,
-                    SECRET_KEY,
-                    algorithms=['HS256']
-                )
-                user_info = db.normal_users.find_one({'username':payload.get('id')})
-                user_info2 = db.expert_users.find_one({'username':payload.get('id')})
+                payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+                user_info = db.normal_users.find_one({'username': payload.get('id')})
+                user_info2 = db.expert_users.find_one({'username': payload.get('id')})
                 
                 if user_info:
-                    return render_template('home.html',user_info=user_info)
+                    return render_template('about.html', user_info=user_info)
                 elif user_info2:
-                    return render_template('home2.html',user_info2=user_info2)
+                    return render_template('contact.html', user_info2=user_info2)
                 else:
                     return render_template('login.html')
                     
             except jwt.ExpiredSignatureError:
-                msg='Your token has expired'
+                msg = 'Your token has expired'
                 return redirect(url_for('login', msg=msg))
             except jwt.exceptions.DecodeError:
-                msg='There was a problem logging you in'
+                msg = 'There was a problem logging you in'
                 return redirect(url_for('login', msg=msg))
         else:
-            return render_template('login.html',msg=msg)
-
+            return render_template('login.html', msg=msg)
 
 @app.route("/user/<username>")
 def user(username):
-    # an endpoint for retrieving a user's profile information
-    # and all of their posts
-    token_receive = request.cookies.get("mytoken")
+    token_receive = request.cookies.get(TOKEN_KEY)
     try:
         payload = jwt.decode(token_receive, SECRET_KEY, algorithms=["HS256"])
-        # if this is my own profile, True
-        # if this is somebody else's profile, False
         status = username == payload["id"]
 
         user_info = db.users.find_one({"username": username}, {"_id": False})
@@ -113,14 +143,11 @@ def user(username):
     except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
         return redirect(url_for("home"))
 
-
 @app.route("/sign_in", methods=["POST"])
 def sign_in():
-    # Sign in
     username_receive = request.form["username_give"]
     password_receive = request.form["password_give"]
     pw_hash = hashlib.sha256(password_receive.encode("utf-8")).hexdigest()
-    print(username_receive, pw_hash)
     result = db.normal_users.find_one(
         {
             "username": username_receive,
@@ -133,42 +160,17 @@ def sign_in():
             "password": pw_hash,
         }
     )
-    if result:
+    if result or result2:
         payload = {
             "id": username_receive,
-            # the token will be valid for 24 hours
             "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
-        return jsonify(
-            {
-                "result": "success",
-                "token": token,
-            }
-        )
-    elif result2:
-        payload = {
-            "id": username_receive,
-            # the token will be valid for 24 hours
-            "exp": datetime.utcnow() + timedelta(seconds=60 * 60 * 24),
-        }
-        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-
-        return jsonify(
-            {
-                "result": "success",
-                "token": token,
-            }
-        )
+        response = jsonify({"result": "success", "token": token})
+        response.set_cookie(TOKEN_KEY, token)
+        return response
     else:
-        return jsonify(
-            {
-                "result": "fail",
-                "msg": "We could not find a user with that id/password combination",
-            }
-        )
-
+        return jsonify({"result": "fail", "msg": "We could not find a user with that id/password combination"})
 
 @app.route("/sign_up/save", methods=["POST"])
 def sign_up():
@@ -176,44 +178,35 @@ def sign_up():
     password_receive = request.form["password_give"]
     role_receive = request.form["role_give"]
     password_hash = hashlib.sha256(password_receive.encode("utf-8")).hexdigest()
-    if(role_receive == 'expert'):
+    if role_receive == 'expert':
         doc = {
-            "username": username_receive,                               
-            "password": password_hash,                                  
-            "profile_name": username_receive,
-            "role":role_receive,                                            
-            }
-        db.expert_users.insert_one(doc)
-        return jsonify({'result': 'success'})
-    elif(role_receive == 'normal'):
-        doc = {
-            "username": username_receive,                               
+            "username": username_receive,
             "password": password_hash,
-            "profile_name" : username_receive,     
-            "role":role_receive,                                                                        
-            }
+            "profile_name": username_receive,
+            "role": role_receive,
+        }
+        db.expert_users.insert_one(doc)
+    elif role_receive == 'normal':
+        doc = {
+            "username": username_receive,
+            "password": password_hash,
+            "profile_name": username_receive,
+            "role": role_receive,
+        }
         db.normal_users.insert_one(doc)
-        return jsonify({'result': 'success'})
-    else:
-        return jsonify({'result': 'failed'})
-
+    return jsonify({'result': 'success'})
 
 @app.route("/sign_up/check_dup", methods=["POST"])
 def check_dup():
-    # ID we should check whether or not the id is already taken
     username_receive = request.form["username_give"]
-    exists = bool(db.normal_users.find_one({'username':username_receive}))
-    exists2 = bool(db.expert_users.find_one({'username':username_receive}))
-    return jsonify({"result": "success", "exists": exists+exists2})
+    exists = bool(db.normal_users.find_one({'username': username_receive})) or bool(db.expert_users.find_one({'username': username_receive}))
+    return jsonify({"result": "success", "exists": exists})
 
-# ACT
 @app.route("/act", methods=["POST"])
 def act_post():
     act_receive = request.form['act_give']
-
     count = db.act.count_documents({})
     num = count + 1
-
     doc = {
         'num': num,
         'act': act_receive,
@@ -225,10 +218,7 @@ def act_post():
 @app.route("/act/done", methods=["POST"])
 def act_done():
     num_receive = request.form['num_give']
-    db.act.update_one(
-        {'num': int(num_receive)},
-        {'$set': {'done': 1}}
-    )
+    db.act.update_one({'num': int(num_receive)}, {'$set': {'done': 1}})
     return jsonify({'msg': 'Update Kegiatan Selesai!'})
 
 @app.route("/delete", methods=["POST"])
@@ -242,14 +232,11 @@ def act_get():
     act_list = list(db.act.find({}, {'_id': False}))
     return jsonify({'acts': act_list})
 
-# ACT_WEEK
 @app.route("/act_week", methods=["POST"])
 def act_week_post():
     act_week_receive = request.form['act_week_give']
-
     count = db.act_week.count_documents({})
     num = count + 1
-
     doc = {
         'num': num,
         'act_week': act_week_receive,
@@ -261,10 +248,7 @@ def act_week_post():
 @app.route("/act_week/done", methods=["POST"])
 def act_week_done():
     num_receive = request.form['num_give']
-    db.act_week.update_one(
-        {'num': int(num_receive)},
-        {'$set': {'done': 1}}
-    )
+    db.act_week.update_one({'num': int(num_receive)}, {'$set': {'done': 1}})
     return jsonify({'msg': 'Update Rencana Selesai!'})
 
 @app.route("/delete_week", methods=["POST"])
@@ -278,59 +262,104 @@ def act_week_get():
     act_week_list = list(db.act_week.find({}, {'_id': False}))
     return jsonify({'acts_week': act_week_list})
 
-# Note
-@app.route("/note", methods=["POST"])
-def note_post():
-    note_receive = request.form['note_give']
-
-    count = db.note.count_documents({})
-    num = count + 1
-
-    doc = {
-        'num': num,
-        'note': note_receive,
-        'done': 0,
-    }
-    db.note.insert_one(doc)
-    return jsonify({'msg': 'Catatan Berhasil Ditambah!'})
-
-@app.route("/note/done", methods=["POST"])
-def note_done():
-    num_receive = request.form['num_give']
-    db.note.update_one(
-        {'num': int(num_receive)},
-        {'$set': {'done': 1}}
-    )
-    return jsonify({'msg': 'Update Rencana Selesai!'})
-
-@app.route("/delete_note", methods=["POST"])
-def note():
-    num_receive = request.form['num_give']
-    db.note.delete_one({'num': int(num_receive)})
-    return jsonify({'msg': 'delete success!'})
-
-@app.route("/note", methods=["GET"])
-def note_get():
-    note_list = list(db.note.find({}, {'_id': False}))
-    return jsonify({'notes': note_list})
-
-@app.route ('/about')
+@app.route('/about')
 def about():
     return render_template('about.html')
 
-@app.route ('/about2')
-def about2():
-    return render_template('about2.html')
-
-
-@app.route ('/contact')
+@app.route('/contact')
 def contact():
     return render_template('contact.html')
 
-@app.route ('/contact2')
-def contact2():
-    return render_template('contact2.html')
+@app.route('/report', methods=['GET', 'POST'])
+@admin_or_user
+def report():
+    if request.method == 'POST':
+        data_type = request.form['data_type']
+        name = request.form['name']
+        position_or_class = request.form['position_or_class']
+        hadir = request.form.get('hadir') == 'on'
+        sakit = request.form.get('sakit') == 'on'
+        izin = request.form.get('izin') == 'on'
+        tanpa_keterangan = request.form.get('tanpa_keterangan') == 'on'
+        
+        doc = {
+            'name': name,
+            'position_or_class': position_or_class,
+            'hadir': hadir,
+            'sakit': sakit,
+            'izin': izin,
+            'tanpa_keterangan': tanpa_keterangan,
+        }
+        
+        if data_type == 'anak':
+            db.absensi_anak.insert_one(doc)
+        elif data_type == 'staff':
+            db.absensi_staff.insert_one(doc)
+        
+        return redirect(url_for('report'))
+    
+    absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
+    absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+    return render_template('report.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff)
 
+@app.route('/download_report/<report_type>')
+def download_report(report_type):
+    if report_type == 'csv':
+        absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
+        absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Name', 'Position/Class', 'Hadir', 'Sakit', 'Izin', 'Tanpa Keterangan'])
+        
+        for row in absensi_anak:
+            writer.writerow([row['name'], row['position_or_class'], row['hadir'], row['sakit'], row['izin'], row['tanpa_keterangan']])
+        for row in absensi_staff:
+            writer.writerow([row['name'], row['position_or_class'], row['hadir'], row['sakit'], row['izin'], row['tanpa_keterangan']])
+        
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', attachment_filename='report.csv', as_attachment=True)
+    
+    elif report_type == 'pdf':
+        absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
+        absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+        
+        rendered = render_template('report_pdf.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff)
+        pdf = pdfkit.from_string(rendered, False, configuration=config)
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'attachment; filename=report.pdf'
+        return response
+
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('query').lower()
+    categories = ['absensi', 'laporan keuangan', 'progresif anak']
+    results = [category for category in categories if query in category]
+    return jsonify(results)
+
+@app.route('/report_progresif_anak', methods=['GET', 'POST'])
+@admin_only
+def report_progresif_anak():
+    if request.method == 'POST':
+        name = request.form['name']
+        academic_score = int(request.form['academic_score'])
+        physical_score = int(request.form['physical_score'])
+        attendance_score = int(request.form['attendance_score'])
+        
+        doc = {
+            'name': name,
+            'academic_score': academic_score,
+            'physical_score': physical_score,
+            'attendance_score': attendance_score,
+        }
+        
+        db.progresif_anak.insert_one(doc)
+        
+        return redirect(url_for('report_progresif_anak'))
+    
+    progresif_anak = list(db.progresif_anak.find({}, {'_id': False}))
+    return render_template('report_progresif_anak.html', progresif_anak=progresif_anak)
 
 if __name__ == '__main__':
-    app.run('0.0.0.0', port=5000, debug=True)   
+    app.run('0.0.0.0', port=5000, debug=True)
