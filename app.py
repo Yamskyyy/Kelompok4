@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, make_response, flash
+from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, flash
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 import jwt
 import hashlib
 import csv
-import pdfkit
 from io import StringIO, BytesIO
 from functools import wraps
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Load environment variables from a .env file
 dotenv_path = join(dirname(__file__), '.env')
@@ -27,9 +28,6 @@ MONGO_URI = os.getenv('MONGO_URI')
 
 client = MongoClient(MONGO_URI)
 db = client.dbPPA
-
-# Set path to the wkhtmltopdf executable
-config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update this path accordingly for your system
 
 def admin_only(f):
     @wraps(f)
@@ -90,7 +88,7 @@ def home():
             if user_info:
                 return render_template('home.html', user_info=user_info)
             elif user_info2:
-                return render_template('home2.html', user_info2=user_info2)
+                return render_template('home2.html', user_info=user_info2)
             else:
                 return render_template('login.html')
         except jwt.ExpiredSignatureError:
@@ -118,7 +116,7 @@ def login():
                 if user_info:
                     return render_template('about.html', user_info=user_info)
                 elif user_info2:
-                    return render_template('contact.html', user_info2=user_info2)
+                    return render_template('contact.html', user_info=user_info2)
                 else:
                     return render_template('login.html')
                     
@@ -264,50 +262,104 @@ def act_week_get():
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+            user_info = db.normal_users.find_one({'username': payload.get('id')})
+            user_info2 = db.expert_users.find_one({'username': payload.get('id')})
+            
+            if user_info:
+                return render_template('about.html', user_info=user_info)
+            elif user_info2:
+                return render_template('about2.html', user_info=user_info2)
+            else:
+                return render_template('login.html')
+        except jwt.ExpiredSignatureError:
+            msg = 'Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg = 'There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
 
 @app.route('/contact')
 def contact():
-    return render_template('contact.html')
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+            user_info = db.normal_users.find_one({'username': payload.get('id')})
+            user_info2 = db.expert_users.find_one({'username': payload.get('id')})
+            
+            if user_info:
+                return render_template('contact.html', user_info=user_info)
+            elif user_info2:
+                return render_template('contact.html', user_info=user_info2)
+            else:
+                return render_template('login.html')
+        except jwt.ExpiredSignatureError:
+            msg = 'Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg = 'There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
 
 @app.route('/report', methods=['GET', 'POST'])
 @admin_or_user
 def report():
-    if request.method == 'POST':
-        data_type = request.form['data_type']
-        name = request.form['name']
-        position_or_class = request.form['position_or_class']
-        hadir = request.form.get('hadir') == 'on'
-        sakit = request.form.get('sakit') == 'on'
-        izin = request.form.get('izin') == 'on'
-        tanpa_keterangan = request.form.get('tanpa_keterangan') == 'on'
-        
-        doc = {
-            'name': name,
-            'position_or_class': position_or_class,
-            'hadir': hadir,
-            'sakit': sakit,
-            'izin': izin,
-            'tanpa_keterangan': tanpa_keterangan,
-        }
-        
-        if data_type == 'anak':
-            db.absensi_anak.insert_one(doc)
-        elif data_type == 'staff':
-            db.absensi_staff.insert_one(doc)
-        
-        return redirect(url_for('report'))
-    
-    absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
-    absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
-    return render_template('report.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff)
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+            user_info = db.normal_users.find_one({'username': payload.get('id')}) or db.expert_users.find_one({'username': payload.get('id')})
+            
+            if request.method == 'POST':
+                data_type = request.form['data_type']
+                name = request.form['name']
+                position_or_class = request.form['position_or_class']
+                hadir = request.form.get('hadir') == 'on'
+                sakit = request.form.get('sakit') == 'on'
+                izin = request.form.get('izin') == 'on'
+                tanpa_keterangan = request.form.get('tanpa_keterangan') == 'on'
+                
+                doc = {
+                    'name': name,
+                    'position_or_class': position_or_class,
+                    'hadir': hadir,
+                    'sakit': sakit,
+                    'izin': izin,
+                    'tanpa_keterangan': tanpa_keterangan,
+                }
+                
+                if data_type == 'anak':
+                    db.absensi_anak.insert_one(doc)
+                elif data_type == 'staff':
+                    db.absensi_staff.insert_one(doc)
+                
+                return redirect(url_for('report'))
+            
+            absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
+            absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+            return render_template('report.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff, user_info=user_info)
+        except jwt.ExpiredSignatureError:
+            msg = 'Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg = 'There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
 
 @app.route('/download_report/<report_type>')
 def download_report(report_type):
+    absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
+    absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+    
     if report_type == 'csv':
-        absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
-        absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
-        
         output = StringIO()
         writer = csv.writer(output)
         writer.writerow(['Name', 'Position/Class', 'Hadir', 'Sakit', 'Izin', 'Tanpa Keterangan'])
@@ -321,15 +373,28 @@ def download_report(report_type):
         return send_file(output, mimetype='text/csv', attachment_filename='report.csv', as_attachment=True)
     
     elif report_type == 'pdf':
-        absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
-        absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
+        # Generate PDF using reportlab
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
+        c.drawString(100, 750, "Absensi Anak")
+        c.drawString(100, 735, "Name, Position/Class, Hadir, Sakit, Izin, Tanpa Keterangan")
         
-        rendered = render_template('report_pdf.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff)
-        pdf = pdfkit.from_string(rendered, False, configuration=config)
-        response = make_response(pdf)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename=report.pdf'
-        return response
+        y = 720
+        for row in absensi_anak:
+            c.drawString(100, y, f"{row['name']}, {row['position_or_class']}, {row['hadir']}, {row['sakit']}, {row['izin']}, {row['tanpa_keterangan']}")
+            y -= 15
+            
+        c.drawString(100, y-30, "Absensi Staff")
+        c.drawString(100, y-45, "Name, Position/Class, Hadir, Sakit, Izin, Tanpa Keterangan")
+        
+        y -= 60
+        for row in absensi_staff:
+            c.drawString(100, y, f"{row['name']}, {row['position_or_class']}, {row['hadir']}, {row['sakit']}, {row['izin']}, {row['tanpa_keterangan']}")
+            y -= 15
+        
+        c.save()
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, attachment_filename='report.pdf', mimetype='application/pdf')
 
 @app.route('/search', methods=['GET'])
 def search():
