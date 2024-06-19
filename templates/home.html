@@ -58,7 +58,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/about" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('about') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-people-fill"></i>
                                 <span class="d-none d-md-inline">
                                     About
@@ -66,7 +66,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="/contact" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('contact') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-telephone-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Contact
@@ -82,7 +82,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('report') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-exclamation-circle-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Report

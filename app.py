@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, make_response, flash
+from flask import Flask, render_template, jsonify, request, redirect, url_for, send_file, flash
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 import jwt
 import hashlib
 import csv
-import pdfkit
 from io import StringIO, BytesIO
 from functools import wraps
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Load environment variables from a .env file
 dotenv_path = join(dirname(__file__), '.env')
@@ -27,9 +28,6 @@ MONGO_URI = os.getenv('MONGO_URI')
 
 client = MongoClient(MONGO_URI)
 db = client.dbPPA
-
-# Set path to the wkhtmltopdf executable
-config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update this path accordingly for your system
 
 def admin_only(f):
     @wraps(f)
@@ -266,6 +264,10 @@ def act_week_get():
 def about():
     return render_template('about.html')
 
+@app.route('/about2')
+def about2():
+    return render_template('about2.html')
+
 @app.route('/contact')
 def contact():
     return render_template('contact.html')
@@ -324,12 +326,28 @@ def download_report(report_type):
         absensi_anak = list(db.absensi_anak.find({}, {'_id': False}))
         absensi_staff = list(db.absensi_staff.find({}, {'_id': False}))
         
-        rendered = render_template('report_pdf.html', absensi_anak=absensi_anak, absensi_staff=absensi_staff)
-        pdf = pdfkit.from_string(rendered, False, configuration=config)
-        response = make_response(pdf)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename=report.pdf'
-        return response
+        # Generate PDF using reportlab
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
+        c.drawString(100, 750, "Absensi Anak")
+        c.drawString(100, 735, "Name, Position/Class, Hadir, Sakit, Izin, Tanpa Keterangan")
+        
+        y = 720
+        for row in absensi_anak:
+            c.drawString(100, y, f"{row['name']}, {row['position_or_class']}, {row['hadir']}, {row['sakit']}, {row['izin']}, {row['tanpa_keterangan']}")
+            y -= 15
+            
+        c.drawString(100, y-30, "Absensi Staff")
+        c.drawString(100, y-45, "Name, Position/Class, Hadir, Sakit, Izin, Tanpa Keterangan")
+        
+        y -= 60
+        for row in absensi_staff:
+            c.drawString(100, y, f"{row['name']}, {row['position_or_class']}, {row['hadir']}, {row['sakit']}, {row['izin']}, {row['tanpa_keterangan']}")
+            y -= 15
+        
+        c.save()
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, attachment_filename='report.pdf', mimetype='application/pdf')
 
 @app.route('/search', methods=['GET'])
 def search():
