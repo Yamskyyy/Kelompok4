@@ -78,6 +78,44 @@ function delete_act(num) {
     });
 }
 
+function loadActivities() {
+    $.ajax({
+        url: '/get_activities',
+        type: 'GET',
+        success: function(response) {
+            const activityList = $('#activity-list');
+            activityList.empty();
+            response.forEach(activity => {
+                activityList.append(`<li>${activity}</li>`);
+            });
+        },
+        error: function(error) {
+            console.error('Error loading activities:', error);
+        }
+    });
+}
+
+function addActivity() {
+    const activity = $('#activity-input').val();
+    $.ajax({
+        url: '/add_activity',
+        type: 'POST',
+        data: { 'activity': activity },
+        success: function(response) {
+            if (response.result === 'success') {
+                loadActivities();
+            }
+        },
+        error: function(error) {
+            console.error('Error adding activity:', error);
+        }
+    });
+}
+
+$(document).ready(function() {
+    loadActivities();
+});
+
 // Kegiatan Minggu Ini
 $(document).ready(function () {
     show_act_week();

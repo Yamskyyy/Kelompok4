@@ -260,6 +260,37 @@ def act_week_get():
     act_week_list = list(db.act_week.find({}, {'_id': False}))
     return jsonify({'acts_week': act_week_list})
 
+@app.route("/note", methods=["POST"])
+def note():
+    note_receive = request.form['note_give']
+    count = db.act_week.count_documents({})
+    num = count + 1
+    doc = {
+        'num': num,
+        'note': note_receive,
+        'done': 0,
+    }
+    db.note.insert_one(doc)
+    return jsonify({'msg': 'Catatan Berhasil Ditambah!'})
+
+@app.route("/note/done", methods=["POST"])
+def notw_done():
+    num_receive = request.form['num_give']
+    db.note.update_one({'num': int(num_receive)}, {'$set': {'done': 1}})
+    return jsonify({'msg': 'Update Catatan Selesai!'})
+
+@app.route("/delete_note", methods=["POST"])
+def note_bucket():
+    num_receive = request.form['num_give']
+    db.note.delete_one({'num': int(num_receive)})
+    return jsonify({'msg': 'delete success!'})
+
+@app.route("/note", methods=["GET"])
+def note_get():
+    note_list = list(db.note.find({}, {'_id': False}))
+    return jsonify({'notes': note_list})
+
+
 @app.route('/about')
 def about():
     token_receive = request.cookies.get(TOKEN_KEY)

@@ -127,18 +127,11 @@
                 <div class="row row-cols-1 row-cols-lg-3 g-4">
                     <div class="col">
                         <div class="bg-primary bg-gradient bg-opacity-75 p-4 rounded shadow-sm text-bg-primary h-100">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <h2 class="fs-4">Today's Activity</h2>
-                                <i class="bi bi-check2-square fs-4"></i>
-                            </div>
-                            <div class="mybox">
-                                <div class="myact">
-                                    <input id="act" class="form-control" type="text" placeholder="Masukkan Kegiatan">
-                                    <button onclick="save_act()" type="button"
-                                        class="btn btn-primary">Simpan</button>
-                                </div>
-                            </div>
-                            <div class="mybox" id="act-list">
+                            <div id="today-activity">
+                                <h3>Today's Activity</h3>
+                                <input type="text" id="activity-input" placeholder="Masukkan Kegiatan">
+                                <button onclick="addActivity()">Simpan</button>
+                                <ul id="activity-list"></ul>
                             </div>
                         </div>
                     </div>
