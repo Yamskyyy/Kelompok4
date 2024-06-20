@@ -100,6 +100,35 @@ def home():
     else:
         return render_template('login.html')
 
+@app.route('/activities')
+@admin_or_user
+def activities():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+            user_info = db.normal_users.find_one({'username': payload.get('id')}) or db.expert_users.find_one({'username': payload.get('id')})
+            return render_template('activities.html', user_info=user_info)
+        except jwt.ExpiredSignatureError:
+            msg = 'Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg = 'There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
+
+@app.route('/child')
+def child_management():
+    # Logika untuk halaman Child Management
+    return render_template('child.html')
+
+@app.route('/user')
+def user_management():
+    # Logika untuk halaman User Management
+    return render_template('user.html')
+
+
 @app.route("/login")
 def login():
     token_receive = request.cookies.get(TOKEN_KEY)
