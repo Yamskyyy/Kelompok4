@@ -101,6 +101,35 @@ def home():
     else:
         return render_template('login.html')
 
+@app.route('/activities')
+@admin_or_user
+def activities():
+    token_receive = request.cookies.get(TOKEN_KEY)
+    if token_receive:
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+            user_info = db.normal_users.find_one({'username': payload.get('id')}) or db.expert_users.find_one({'username': payload.get('id')})
+            return render_template('activities.html', user_info=user_info)
+        except jwt.ExpiredSignatureError:
+            msg = 'Your token has expired'
+            return redirect(url_for('login', msg=msg))
+        except jwt.exceptions.DecodeError:
+            msg = 'There was a problem logging you in'
+            return redirect(url_for('login', msg=msg))
+    else:
+        return render_template('login.html')
+
+@app.route('/child')
+def child_management():
+    # Logika untuk halaman Child Management
+    return render_template('child.html')
+
+@app.route('/user')
+def user_management():
+    # Logika untuk halaman User Management
+    return render_template('user.html')
+
+
 @app.route("/login")
 def login():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -260,6 +289,37 @@ def act_week_bucket():
 def act_week_get():
     act_week_list = list(db.act_week.find({}, {'_id': False}))
     return jsonify({'acts_week': act_week_list})
+
+@app.route("/note", methods=["POST"])
+def note():
+    note_receive = request.form['note_give']
+    count = db.act_week.count_documents({})
+    num = count + 1
+    doc = {
+        'num': num,
+        'note': note_receive,
+        'done': 0,
+    }
+    db.note.insert_one(doc)
+    return jsonify({'msg': 'Catatan Berhasil Ditambah!'})
+
+@app.route("/note/done", methods=["POST"])
+def notw_done():
+    num_receive = request.form['num_give']
+    db.note.update_one({'num': int(num_receive)}, {'$set': {'done': 1}})
+    return jsonify({'msg': 'Update Catatan Selesai!'})
+
+@app.route("/delete_note", methods=["POST"])
+def note_bucket():
+    num_receive = request.form['num_give']
+    db.note.delete_one({'num': int(num_receive)})
+    return jsonify({'msg': 'delete success!'})
+
+@app.route("/note", methods=["GET"])
+def note_get():
+    note_list = list(db.note.find({}, {'_id': False}))
+    return jsonify({'notes': note_list})
+
 
 @app.route('/about')
 def about():
