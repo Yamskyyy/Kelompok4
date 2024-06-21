@@ -26,6 +26,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 TOKEN_KEY = os.getenv('TOKEN_KEY')
 MONGO_URI = os.getenv('MONGO_URI')
 
+
 client = MongoClient(MONGO_URI)
 db = client.dbPPA
 
@@ -208,7 +209,7 @@ def act_post():
     doc = {
         'num': num,
         'act': act_receive,
-        'done': 0,
+        'done': 0
     }
     db.act.insert_one(doc)
     return jsonify({'msg': 'Kegiatan Berhasil Ditambah!'})
@@ -217,18 +218,27 @@ def act_post():
 def act_done():
     num_receive = request.form['num_give']
     db.act.update_one({'num': int(num_receive)}, {'$set': {'done': 1}})
-    return jsonify({'msg': 'Update Kegiatan Selesai!'})
+    return jsonify({'msg': 'Kegiatan Hari Ini Selesai!'})
 
 @app.route("/delete", methods=["POST"])
-def act_bucket():
+def act_delete():
     num_receive = request.form['num_give']
     db.act.delete_one({'num': int(num_receive)})
-    return jsonify({'msg': 'delete success!'})
+    return jsonify({'msg': 'Kegiatan Berhasil di Hapus'})
 
 @app.route("/act", methods=["GET"])
 def act_get():
     act_list = list(db.act.find({}, {'_id': False}))
     return jsonify({'acts': act_list})
+
+@app.route("/clear_activities", methods=["POST"])
+def clear_activities():
+    try:
+        db.act.delete_many({})
+        return jsonify({'msg': 'Kegiatan Baru Hari Ini!!'})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'msg': 'Error clearing activities'}), 500
 
 @app.route("/act_week", methods=["POST"])
 def act_week_post():
@@ -253,7 +263,7 @@ def act_week_done():
 def act_week_bucket():
     num_receive = request.form['num_give']
     db.act_week.delete_one({'num': int(num_receive)})
-    return jsonify({'msg': 'delete success!'})
+    return jsonify({'msg': 'Kegiatan Berhasil di Hapus'})
 
 @app.route("/act_week", methods=["GET"])
 def act_week_get():
@@ -290,6 +300,26 @@ def note_get():
     note_list = list(db.note.find({}, {'_id': False}))
     return jsonify({'notes': note_list})
 
+activities = {
+    '2024-06-20': ['Kegiatan Hari ini', 'belajar', 'Makan'],
+    '2024-06-21': ['New Activity 1', 'New Activity 2']
+}
+
+@app.route('/get_activities', methods=['GET'])
+def get_activities():
+    today = datetime.today().strftime('%Y-%m-%d')
+    today_activities = activities.get(today, [])
+    return jsonify(today_activities)
+
+@app.route('/add_activity', methods=['POST'])
+def add_activity():
+    activity = request.form['activity']
+    today = datetime.today().strftime('%Y-%m-%d')
+    if today in activities:
+        activities[today].append(activity)
+    else:
+        activities[today] = [activity]
+    return jsonify({'result': 'success'})
 
 @app.route('/about')
 def about():
@@ -327,7 +357,7 @@ def contact():
             if user_info:
                 return render_template('contact.html', user_info=user_info)
             elif user_info2:
-                return render_template('contact.html', user_info=user_info2)
+                return render_template('contact2.html', user_info=user_info2)
             else:
                 return render_template('login.html')
         except jwt.ExpiredSignatureError:

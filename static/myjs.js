@@ -8,8 +8,34 @@ function sign_out() {
 }
 // Kegiatan Hari ini
 $(document).ready(function () {
+    checkAndClearActivities();
     show_act();
 });
+
+function checkAndClearActivities() {
+    let lastAccessDate = localStorage.getItem('lastAccessDate');
+    let currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+
+    if (lastAccessDate !== currentDate) {
+        localStorage.setItem('lastAccessDate', currentDate);
+        clearActivities();
+    }
+}
+function clearActivities() {
+    $.ajax({
+        type: "POST",
+        url: "/clear_activities",
+        success: function (response) {
+            alert(response["msg"]);
+            show_act();
+        },
+        error: function (xhr, status, error) {
+            console.error('Error clearing activities:', error);
+            alert('Error clearing activities');
+        }
+    });
+}
+
 function show_act() {
     $('#act-list').empty();
     $.ajax({
@@ -17,7 +43,7 @@ function show_act() {
         url: "/act",
         data: {},
         success: function (response) {
-            let rows = response['acts']
+            let rows = response['acts'];
             for (let i = 0; i < rows.length; i++) {
                 let act = rows[i]['act'];
                 let num = rows[i]['num'];
@@ -39,11 +65,17 @@ function show_act() {
                         <button onclick="delete_act(${num})" type="button" class="btn btn-danger btn-delete" style="margin-left: 10px;">Hapus</button>
                     </li>
                     `;
-                } $('#act-list').append(temp_html);
+                }
+                $('#act-list').append(temp_html);
             }
+        },
+        error: function (xhr, status, error) {
+            console.error('Error fetching activities:', error);
+            alert('Error fetching activities');
         }
     });
 }
+
 function save_act() {
     let act = $('#act').val();
     $.ajax({
@@ -53,9 +85,14 @@ function save_act() {
         success: function (response) {
             alert(response["msg"]);
             window.location.reload();
+        },
+        error: function (xhr, status, error) {
+            console.error('Error saving activity:', error);
+            alert('Error saving activity');
         }
     });
 }
+
 function done_act(num) {
     $.ajax({
         type: "POST",
@@ -63,9 +100,14 @@ function done_act(num) {
         data: { num_give: num },
         success: function () {
             window.location.reload();
+        },
+        error: function (xhr, status, error) {
+            console.error('Error marking activity as done:', error);
+            alert('Error marking activity as done');
         }
     });
 }
+
 function delete_act(num) {
     $.ajax({
         type: "POST",
@@ -74,47 +116,13 @@ function delete_act(num) {
         success: function (response) {
             alert(response["msg"]);
             show_act();
-        }
-    });
-}
-
-function loadActivities() {
-    $.ajax({
-        url: '/get_activities',
-        type: 'GET',
-        success: function(response) {
-            const activityList = $('#activity-list');
-            activityList.empty();
-            response.forEach(activity => {
-                activityList.append(`<li>${activity}</li>`);
-            });
         },
-        error: function(error) {
-            console.error('Error loading activities:', error);
+        error: function (xhr, status, error) {
+            console.error('Error deleting activity:', error);
+            alert('Error deleting activity');
         }
     });
 }
-
-function addActivity() {
-    const activity = $('#activity-input').val();
-    $.ajax({
-        url: '/add_activity',
-        type: 'POST',
-        data: { 'activity': activity },
-        success: function(response) {
-            if (response.result === 'success') {
-                loadActivities();
-            }
-        },
-        error: function(error) {
-            console.error('Error adding activity:', error);
-        }
-    });
-}
-
-$(document).ready(function() {
-    loadActivities();
-});
 
 // Kegiatan Minggu Ini
 $(document).ready(function () {
