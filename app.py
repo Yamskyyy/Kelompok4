@@ -11,6 +11,7 @@ from io import StringIO, BytesIO
 from functools import wraps
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import base64
 
 # Load environment variables from a .env file
 dotenv_path = join(dirname(__file__), '.env')
@@ -321,10 +322,10 @@ def report():
                 data_type = request.form['data_type']
                 name = request.form['name']
                 position_or_class = request.form['position_or_class']
-                hadir = request.form.get('hadir') == 'on'
-                sakit = request.form.get('sakit') == 'on'
-                izin = request.form.get('izin') == 'on'
-                tanpa_keterangan = request.form.get('tanpa_keterangan') == 'on'
+                hadir = 'Hadir' if request.form.get('hadir') == 'on' else ''
+                sakit = 'Sakit' if request.form.get('sakit') == 'on' else ''
+                izin = 'Izin' if request.form.get('izin') == 'on' else ''
+                tanpa_keterangan = 'Tanpa Keterangan' if request.form.get('tanpa_keterangan') == 'on' else ''
                 
                 doc = {
                     'name': name,
@@ -370,10 +371,9 @@ def download_report(report_type):
             writer.writerow([row['name'], row['position_or_class'], row['hadir'], row['sakit'], row['izin'], row['tanpa_keterangan']])
         
         output.seek(0)
-        return send_file(output, mimetype='text/csv', attachment_filename='report.csv', as_attachment=True)
+        return send_file(output, mimetype='text/csv', download_name='report.csv', as_attachment=True)
     
     elif report_type == 'pdf':
-        # Generate PDF using reportlab
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
         c.drawString(100, 750, "Absensi Anak")
@@ -394,14 +394,7 @@ def download_report(report_type):
         
         c.save()
         buffer.seek(0)
-        return send_file(buffer, as_attachment=True, attachment_filename='report.pdf', mimetype='application/pdf')
-
-@app.route('/search', methods=['GET'])
-def search():
-    query = request.args.get('query').lower()
-    categories = ['absensi', 'laporan keuangan', 'progresif anak']
-    results = [category for category in categories if query in category]
-    return jsonify(results)
+        return send_file(buffer, as_attachment=True, download_name='report.pdf', mimetype='application/pdf')
 
 @app.route('/report_progresif_anak', methods=['GET', 'POST'])
 @admin_only
@@ -425,6 +418,27 @@ def report_progresif_anak():
     
     progresif_anak = list(db.progresif_anak.find({}, {'_id': False}))
     return render_template('report_progresif_anak.html', progresif_anak=progresif_anak)
+
+@app.route('/download_progresif_anak')
+def download_progresif_anak():
+    progresif_anak = list(db.progresif_anak.find({}, {'_id': False}))
+    
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    
+    for row in progresif_anak:
+        c.drawString(100, 750, "Report Progresif Anak")
+        c.drawString(100, 735, "Name: " + row['name'])
+        c.drawString(100, 720, "Nilai Akademik: " + str(row['academic_score']))
+        c.drawString(100, 705, "Nilai Jasmani: " + str(row['physical_score']))
+        c.drawString(100, 690, "Nilai Kehadiran: " + str(row['attendance_score']))
+        
+        chart_path = os.path.join(app.static_folder, 'chart.png')
+        c.drawImage(chart_path, 100, 500, width=400, height=200)
+    
+    c.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name='report_progresif_anak.pdf', mimetype='application/pdf')
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)
