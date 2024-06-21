@@ -1,4 +1,5 @@
 $(document).ready(function () {
+    checkAndClearActivities();
     get_posts("{{user_info2.username}}");
 });
 function sign_out() {
@@ -8,7 +9,6 @@ function sign_out() {
 }
 // Kegiatan Hari ini
 $(document).ready(function () {
-    checkAndClearActivities();
     show_act();
 });
 

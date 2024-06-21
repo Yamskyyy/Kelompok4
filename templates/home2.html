@@ -31,6 +31,7 @@
         .bg-purple {
             background-color: var(--bs-purple) !important;
         }
+
         .d-none {
             cursor: pointer;
         }
@@ -58,7 +59,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ url_for('about') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('about') }}"
+                                class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-people-fill"></i>
                                 <span class="d-none d-md-inline">
                                     About
@@ -66,7 +68,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ url_for('contact') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('contact') }}"
+                                class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-telephone-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Contact
@@ -74,7 +77,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ url_for('activities') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('activities') }}"
+                                class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-calendar-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Activities
@@ -82,7 +86,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="{{ url_for('report') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                            <a href="{{ url_for('report') }}"
+                                class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-exclamation-circle-fill"></i>
                                 <span class="d-none d-md-inline">
                                     Report
@@ -134,8 +139,7 @@
                             <div class="mybox">
                                 <div class="myact">
                                     <input id="act" class="form-control" type="text" placeholder="Masukkan Kegiatan">
-                                    <button onclick="save_act()" type="button"
-                                        class="btn btn-primary">Simpan</button>
+                                    <button onclick="save_act()" type="button" class="btn btn-primary">Simpan</button>
                                 </div>
                             </div>
                             <div class="mybox" id="act-list">
@@ -150,7 +154,8 @@
                             </div>
                             <div class="mybox">
                                 <div class="myact_week">
-                                    <input id="act-week" class="form-control" type="text" placeholder="Masukkan Kegiatan">
+                                    <input id="act-week" class="form-control" type="text"
+                                        placeholder="Masukkan Kegiatan">
                                     <button onclick="save_act_week()" type="button"
                                         class="btn btn-primary">Simpan</button>
                                 </div>
@@ -178,41 +183,13 @@
                         <div class="bg-body p-4 rounded shadow-sm h-100">
                             <div class="d-flex align-items-center justify-content-between">
                                 <h2 class="fs-4">This Month Report</h2>
-                                <button class="btn btn-sm">
-                                    <i class="bi bi-three-dots fs-4"></i>
-                                </button>
-                            </div>
-                            <div class="row row-cols-1 row-cols-lg-2 g-3 mt-3">
-                                <div class="col">
-                                    <a href="#">
-
+                                    <a href="{{ url_for('report') }}"
+                                        class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                                        <i class="bi bi-plus-square-fill"></i>
+                                        <span class="d-none d-md-inline">
+                                            Tambah Laporan
+                                        </span>
                                     </a>
-                                </div>
-                                <div class="col">
-                                    <div class="row row-cols-2 g-3">
-                                        <div class="col">
-                                            <a href="#">
-
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a href="#">
-                                                <img src="https://www.thespruce.com/thmb/iMt63n8NGCojUETr6-T8oj-5-ns=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/PAinteriors-7-cafe9c2bd6be4823b9345e591e4f367f.jpg"
-                                                    alt="Pic" class="img-fluid rounded" />
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a href="#">
-
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a href="#">
-
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
