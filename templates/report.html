@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="{{ url_for('static', filename='logo.jpg') }}" type="image/x-icon" />
+    <meta property="og:title" content="Sweeter - the sweetest site" />
+    <meta property="og:description" content="mini project for Web Plus" />
+    <meta property="og:image" content="{{ url_for('static', filename='image.png') }}" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Report Progresif Anak</title>
@@ -9,6 +13,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='mystyle.css') }}">
     <style>
         .table-header {
             background-color: #ADD8E6;
@@ -19,6 +24,9 @@
         }
         .hidden {
             display: none;
+        }
+        .d-none {
+            cursor: pointer;
         }
     </style>
 </head>
@@ -36,6 +44,14 @@
                             <a href="/" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
                                 <i class="bi bi-microsoft"></i>
                                 <span class="d-none d-md-inline">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('contact') }}" class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                                <i class="bi bi-telephone-fill"></i>
+                                <span class="d-none d-md-inline">
+                                    Contact
+                                </span>
                             </a>
                         </li>
                         <li class="nav-item">
