@@ -3,6 +3,7 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import jwt
 import hashlib
@@ -22,6 +23,9 @@ app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['UPLOAD_FOLDER'] = './static/profile_pics'
 app.secret_key = os.getenv('SECRET_KEY')
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+reports = []
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 TOKEN_KEY = os.getenv('TOKEN_KEY')
@@ -130,7 +134,6 @@ def user_management():
     # Logika untuk halaman User Management
     return render_template('user.html')
 
-
 @app.route("/login")
 def login():
     token_receive = request.cookies.get(TOKEN_KEY)
@@ -231,6 +234,15 @@ def check_dup():
     exists = bool(db.normal_users.find_one({'username': username_receive})) or bool(db.expert_users.find_one({'username': username_receive}))
     return jsonify({"result": "success", "exists": exists})
 
+@app.route("/clear_activities", methods=["POST"])
+def clear_activities():
+    try:
+        db.act.delete_many({})
+        return jsonify({'msg': 'Kegiatan Baru Hari Ini!'})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'msg': 'Kesalahan Dalam Reload'}), 500
+
 @app.route("/act", methods=["POST"])
 def act_post():
     act_receive = request.form['act_give']
@@ -260,15 +272,6 @@ def act_delete():
 def act_get():
     act_list = list(db.act.find({}, {'_id': False}))
     return jsonify({'acts': act_list})
-
-@app.route("/clear_activities", methods=["POST"])
-def clear_activities():
-    try:
-        db.act.delete_many({})
-        return jsonify({'msg': 'Kegiatan Baru Hari Ini!!'})
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'msg': 'Error clearing activities'}), 500
 
 @app.route("/act_week", methods=["POST"])
 def act_week_post():
@@ -330,26 +333,9 @@ def note_get():
     note_list = list(db.note.find({}, {'_id': False}))
     return jsonify({'notes': note_list})
 
-activities = {
-    '2024-06-20': ['Kegiatan Hari ini', 'belajar', 'Makan'],
-    '2024-06-21': ['New Activity 1', 'New Activity 2']
-}
-
-@app.route('/get_activities', methods=['GET'])
-def get_activities():
-    today = datetime.today().strftime('%Y-%m-%d')
-    today_activities = activities.get(today, [])
-    return jsonify(today_activities)
-
-@app.route('/add_activity', methods=['POST'])
-def add_activity():
-    activity = request.form['activity']
-    today = datetime.today().strftime('%Y-%m-%d')
-    if today in activities:
-        activities[today].append(activity)
-    else:
-        activities[today] = [activity]
-    return jsonify({'result': 'success'})
+@app.route('/reportbulanan', methods=['GET', 'POST'])
+def reportbulanan():
+    return render_template('reportBulanan.html')
 
 @app.route('/about')
 def about():

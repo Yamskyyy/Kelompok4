@@ -1,5 +1,4 @@
 $(document).ready(function () {
-    checkAndClearActivities();
     get_posts("{{user_info2.username}}");
 });
 function sign_out() {
@@ -9,9 +8,8 @@ function sign_out() {
 }
 // Kegiatan Hari ini
 $(document).ready(function () {
-    show_act();
+    checkAndClearActivities();
 });
-
 function checkAndClearActivities() {
     let lastAccessDate = localStorage.getItem('lastAccessDate');
     let currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
@@ -36,6 +34,9 @@ function clearActivities() {
     });
 }
 
+$(document).ready(function () {
+    show_act();
+});
 function show_act() {
     $('#act-list').empty();
     $.ajax({
