@@ -27,9 +27,9 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 reports = []
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-TOKEN_KEY = os.getenv('TOKEN_KEY')
-MONGO_URI = os.getenv('MONGO_URI')
+SECRET_KEY = 'SPARTA'
+TOKEN_KEY = 'mytoken'
+
 
 MONGODB_URI = os.environ.get("MONGODB_URI")
 DB_NAME =  os.environ.get("DB_NAME")
