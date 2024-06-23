@@ -31,9 +31,11 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 TOKEN_KEY = os.getenv('TOKEN_KEY')
 MONGO_URI = os.getenv('MONGO_URI')
 
+MONGODB_URI = os.environ.get("MONGODB_URI")
+DB_NAME =  os.environ.get("DB_NAME")
 
-client = MongoClient(MONGO_URI)
-db = client.dbPPA
+client = MongoClient(MONGODB_URI)
+db = client[DB_NAME]
 
 def admin_only(f):
     @wraps(f)
