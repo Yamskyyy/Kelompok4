@@ -522,5 +522,27 @@ def download_progresif_anak():
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name='report_progresif_anak.pdf', mimetype='application/pdf')
 
+@app.route('/AddOrder',methods=['GET', 'POST'])
+def AddOrder():
+    if request.method=='POST':
+        nama = request.form['nama']
+        deskripsi = request.form['deskripsi']
+
+        gambar=request.files['gambar']
+        extension= gambar.filename.split('.')[-1]
+        today=datetime.now()
+        mytime=today.strftime('%Y-%M-%d:%H-%m-%S')
+        gambar_name = f'gambar-{mytime}.{extension}'
+        gambar.save('static/assets/laporan/{gambar_name}')
+
+        doc = {
+            'nama' : nama,
+            'deskripsi' : deskripsi,
+            'gambar' : gambar_name
+        }
+        db.laporanbulanan.insert_one(doc)
+        return redirect(url_for('home'))
+    return render_template('home2.html')
+
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)

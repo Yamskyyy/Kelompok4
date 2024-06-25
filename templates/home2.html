@@ -183,13 +183,28 @@
                         <div class="bg-body p-4 rounded shadow-sm h-100">
                             <div class="d-flex align-items-center justify-content-between">
                                 <h2 class="fs-4">This Month Report</h2>
-                                    <a href="{{ url_for('reportbulanan') }}"
-                                        class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
-                                        <i class="bi bi-plus-square-fill"></i>
-                                        <span class="d-none d-md-inline">
-                                            Tambah Laporan
-                                        </span>
-                                    </a>
+                                <a href="{{ url_for('reportbulanan') }}"
+                                    class="nav-link d-flex align-items-center fw-bolder gap-2 text-body">
+                                    <i class="bi bi-plus-square-fill"></i>
+                                    <span class="d-none d-md-inline">
+                                        Tambah Laporan
+                                    </span>
+                                </a>
+                                {% for item in laporanbulanan %}
+                                <div class="col">
+                                    <div class="card">
+                                        <img src="../static/assets/laporan/{{item.gambar}}" class="card-img-top"
+                                            alt="Hollywood Sign on The Hill" />
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between">
+                                                <h5 class="card-title">{{item.nama}}</h5>
+                                            </div>
+                                            <p class="card-text">
+                                            <h5 class="card-title" style="color: brown;">Deskripsi : {{item.deskripsi}}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
