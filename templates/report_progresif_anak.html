@@ -76,7 +76,6 @@
         <div class="col p-0 overflow-hidden bg-light">
             <div class="py-4 px-3 px-md-5 shadow-sm bg-body">
                 <h1 class="m-0">Report Progresif Anak</h1>
-                <p>Welcome, <span class="fw-bold">username</span></p>
             </div>
             <div class="py-2 px-3 px-md-5 my-4">
                 <div>
@@ -146,28 +145,34 @@
 
         document.getElementById('progresif-anak-form').addEventListener('submit', function(event) {
             event.preventDefault();
-
+        
             const academicScore = parseInt(document.getElementById('academic_score').value);
             const physicalScore = parseInt(document.getElementById('physical_score').value);
             const attendanceScore = parseInt(document.getElementById('attendance_score').value);
-
+        
             chart.data.datasets[0].data = [academicScore, physicalScore, attendanceScore];
             chart.update();
-
-            const chartDataUrl = document.getElementById('progresif-anak-chart').toDataURL();
+        
             const formData = new FormData(this);
-            formData.append('chart_data', chartDataUrl);
-
+        
             fetch('/report_progresif_anak', {
                 method: 'POST',
                 body: formData
-            }).then(response => response.json())
-              .then(data => {
-                  console.log(data);
-              }).catch(error => {
-                  console.error(error);
-              });
+            }).then(response => {
+                // Check if response is valid JSON
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            }).then(data => {
+                console.log(data);
+                alert(data.msg || 'Data submitted successfully!');
+            }).catch(error => {
+                console.error(error);
+                alert('Failed to submit data.');
+            });
         });
+        
     </script>
 </body>
 

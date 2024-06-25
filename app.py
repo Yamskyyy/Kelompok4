@@ -511,8 +511,13 @@ def download_progresif_anak():
         c.drawString(100, 690, "Nilai Kehadiran: " + str(row['attendance_score']))
         
         chart_path = os.path.join(app.static_folder, 'chart.png')
-        c.drawImage(chart_path, 100, 500, width=400, height=200)
-    
+        
+        try:
+            c.drawImage(chart_path, 100, 500, width=400, height=200)
+        except OSError as e:
+            # Handle error when image file cannot be opened
+            print(f"Error: {e}")
+        
     c.save()
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name='report_progresif_anak.pdf', mimetype='application/pdf')
